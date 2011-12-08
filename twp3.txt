@@ -1,0 +1,561 @@
+
+
+
+                                                            M. v. Loewis
+                                                                     HPI
+                                                         January 8, 2010
+
+
+                  The Wire Protocol, version 3 (TWP3)
+
+Abstract
+
+   This memo presents The Wire Protocol, an extensible messaging
+   protocol suitable for teaching purposes.
+
+
+Table of Contents
+
+   1.  Introduction . . . . . . . . . . . . . . . . . . . . . . . . .  2
+   2.  Conventions in this document . . . . . . . . . . . . . . . . .  2
+   3.  Connection Management  . . . . . . . . . . . . . . . . . . . .  2
+   4.  The Definition Language  . . . . . . . . . . . . . . . . . . .  3
+     4.1.  Lexical rules  . . . . . . . . . . . . . . . . . . . . . .  3
+     4.2.  Types  . . . . . . . . . . . . . . . . . . . . . . . . . .  3
+     4.3.  Type Definitions . . . . . . . . . . . . . . . . . . . . .  3
+     4.4.  Messages . . . . . . . . . . . . . . . . . . . . . . . . .  4
+     4.5.  Protocols  . . . . . . . . . . . . . . . . . . . . . . . .  4
+     4.6.  Specifications . . . . . . . . . . . . . . . . . . . . . .  4
+     4.7.  Namespaces and Visibility  . . . . . . . . . . . . . . . .  4
+   5.  Marshalling  . . . . . . . . . . . . . . . . . . . . . . . . .  4
+     5.1.  Primitive Types  . . . . . . . . . . . . . . . . . . . . .  5
+     5.2.  Structured Data  . . . . . . . . . . . . . . . . . . . . .  5
+   6.  Application Types  . . . . . . . . . . . . . . . . . . . . . .  6
+   7.  Extensions . . . . . . . . . . . . . . . . . . . . . . . . . .  6
+     7.1.  MessageError message . . . . . . . . . . . . . . . . . . .  6
+   8.  Examples . . . . . . . . . . . . . . . . . . . . . . . . . . .  7
+     8.1.  TDL  . . . . . . . . . . . . . . . . . . . . . . . . . . .  7
+     8.2.  Mapping from CORBA to the RPC protocol . . . . . . . . . .  7
+     8.3.  Byte sequence  . . . . . . . . . . . . . . . . . . . . . .  8
+     8.4.  Connection Shutdown  . . . . . . . . . . . . . . . . . . .  9
+   9.  Acknowledgements . . . . . . . . . . . . . . . . . . . . . . .  9
+   10. IANA Considerations  . . . . . . . . . . . . . . . . . . . . .  9
+   11. Security Considerations  . . . . . . . . . . . . . . . . . . .  9
+   12. Revision History . . . . . . . . . . . . . . . . . . . . . . .  9
+     12.1. October 20, 2009 . . . . . . . . . . . . . . . . . . . . .  9
+     12.2. January 8, 2010  . . . . . . . . . . . . . . . . . . . . .  9
+   13. References . . . . . . . . . . . . . . . . . . . . . . . . . . 10
+     13.1. Normative References . . . . . . . . . . . . . . . . . . . 10
+     13.2. Informative References . . . . . . . . . . . . . . . . . . 10
+   Author's Address . . . . . . . . . . . . . . . . . . . . . . . . . 10
+
+
+
+
+v. Loewis                                                       [Page 1]
+
+                   The Wire Protocol, version 3 (TWP3)      January 2010
+
+
+1.  Introduction
+
+   The Wire Protocol was designed to support transmission of messages
+   over a TCP connection.  A group of related messages forms a protocol;
+   protocols can then be specified using The Definition Language (TDL).
+   Each message is identified by a message number, and can carry a
+   sequence of data as its payload.  TWP supports very few primitive
+   data types, namely integers, character strings, and binary data (byte
+   strings).  Using these types, user-defined types can be formed by
+   grouping them into structures, arrays, or messages.
+
+   Central to the design of TWP3 is the extensibility of the protocol,
+   and the global registration of extensions.  A protocol can be
+   extended with additional messages; structures can be extended by
+   additional fields.
+
+
+2.  Conventions in this document
+
+   The key words "MUST" and "MAY"in this document is to be interpreted
+   as described in RFC 2119 [RFC2119].  The grammar definition uses the
+   format specified in RFC 4234 [RFC4234].  The grammar permits linear
+   space (section 3.1 of RFC 4234) in all rules except for the lexical
+   rules (Section 4.1).  Spaces are required if a keyword is immediately
+   followed by another keyword, or an identifier.
+
+
+3.  Connection Management
+
+   In a TWP interaction, an TWP initiator opens a TCP connection to a
+   TWP responder.  The mechanism by which the intiator obtains
+   information about the IP address and TCP port number of the responder
+   are out of scope of this protocol.
+
+   The TWP initiator MUST send the "magic" byte sequence 54 57 50 33 0A
+   ('TWP3\n' in ASCII) to the responder.  The responder MUST NOT send
+   any TWP data on the connection until this byte sequence has been
+   received.  It MAY use the byte sequence to determine that the
+   connection is meant to transmit data for a different protocol.
+
+   Following the "magic" byte sequence, the initiator MUST send an
+   integer, encoded either as a short or a long integer.  The responder
+   can use this integer to verify that both parties use the same TWP
+   protocol, and it MAY send a MessageError (see Section 7.1) message if
+   it does not support the requested protocol.
+
+   Following the protocol version, both the initiator and the responder
+   MUST send a sequence of messages.  Either side MAY close the
+
+
+
+v. Loewis                                                       [Page 2]
+
+                   The Wire Protocol, version 3 (TWP3)      January 2010
+
+
+   connection after a complete last message has been sent.  A TWP
+   protocol MAY specify additional constraints about connection closure,
+   e.g. that the connection must not be closed when the protocol is in a
+   certain state.
+
+
+4.  The Definition Language
+
+4.1.  Lexical rules
+
+   A TDL specification is tokenized into a sequence of keywords,
+   identifiers, numbers, and punctuation characters.  Comments follow
+   the C++ syntax of comments.  Identifier-like terminal symbols in the
+   grammar rules below are keywords and cannot be used as identifiers.
+   The lexis for identifiers and numbers is defined as follows:
+
+   LETTER = ALPHA / "_"
+   identifier = LETTER *(LETTER / DIGIT)
+   number = 1*DIGIT
+
+   ALPHA and DIGIT are defined in section B.1 of RFC 4234 [RFC4234]
+
+4.2.  Types
+
+   A type can either be a primitive type or a reference to a user-
+   defined type:
+
+   type = primitiveType / identifier / ("any" "defined" "by" identifier)
+   primitiveType = "int" / "string" / "binary" / "any"
+
+   When a field is declared with an any-defined-by type, the same
+   structure or message MUST include another field identified by the
+   identifier; this field is called the "base" field.
+
+4.3.  Type Definitions
+
+   A type definition introduces a new user-defined type.  Structure
+   types may optionally be registered types, which means they can appear
+   as extensions.
+
+   typedef = structdef / sequencedef / uniondef / forwarddef
+   structdef = "struct" identifier [ "=" "ID" number ] "{" 1*field "}"
+   field = ["optional"] type identifier ";"
+   sequencedef = "sequence" "<" type ">" identifier ";"
+   uniondef = "union" identifier "{" 1*casedef "}"
+   casedef = "case" number ":" type identifier ";"
+   forwarddef = "typedef" identifier ";"
+
+
+
+
+v. Loewis                                                       [Page 3]
+
+                   The Wire Protocol, version 3 (TWP3)      January 2010
+
+
+4.4.  Messages
+
+   A message is defined by giving it a name and a message number, which
+   may either be a protocol-specific number (in the range 0..7) or an
+   extension message with a registered ID.
+
+   messagedef = "message" identifier "=" ( %x30-37 / "ID" number ) "{"
+   *field "}"
+
+4.5.  Protocols
+
+   A protocol is defined by giving it a protocol name, an protocol ID,
+   and a protocol body:
+
+   protocol = "protocol" identifier "=" "ID" number "{" *protocolelement
+   "}"
+   protocolelement = typedef / messagedef
+
+4.6.  Specifications
+
+   An entire specification may contain arbitrary definitions.  All top-
+   level definitions (structs, messages, and protocols) must have ID
+   values assigned.
+
+   specification = *(protocol / messagedef / structdef)
+
+4.7.  Namespaces and Visibility
+
+   In a TDL specification, there is a single global namespace, and then
+   one nested namespace per struct and one per message.  Protocols do
+   not form a namespace.  All identifers within a namespace MUST be
+   distinct.  A name MUST NOT be used before it is being defined, and
+   MUST be used only within the namespace it is defined, or a nested
+   namespace.  In particular, the name referred to in an any-defined-by
+   construct MUST denote an earlier field in the same struct or message.
+
+   To define a recursive type, a forward definition can be used.  For
+   any forwarddef, there MUST be a later true definition of the type
+   being forward-defined.
+
+
+5.  Marshalling
+
+   In a message exchange, each message MUST be transmitted according to
+   the marshalling rules specified below.  Integer values MUST be
+   marshalled in network byte order (big-endian) whereever they appear;
+   if the value can be negative, it MUST be represented in two's
+   complement.
+
+
+
+v. Loewis                                                       [Page 4]
+
+                   The Wire Protocol, version 3 (TWP3)      January 2010
+
+
+   Each value MUST be marshalled in a tag-value form, where a single
+   byte indicates the type, followed by an optional value.  The table of
+   tags is given below.
+
+   +---------+------------------+--------------------------------------+
+   | Tag     | Value            | Description                          |
+   +---------+------------------+--------------------------------------+
+   | 0       |                  | End of Content                       |
+   | 1       |                  | No Value                             |
+   | 2       | fields           | struct                               |
+   | 3       | fields           | sequence                             |
+   | 4-11    | fields           | union/message (alternative 0..7)     |
+   | 12      | 4 Byte ID,       | Registered Extension                 |
+   |         | fields           |                                      |
+   | 13      | 1 Byte           | short integer (-128-127)             |
+   | 14      | 4 Bytes          | long integer                         |
+   | 15      | 1 Byte +         | short binary                         |
+   |         | contents         |                                      |
+   | 16      | 4 Bytes +        | long binary                          |
+   |         | contents         |                                      |
+   | 17-126  | contents         | short string (UTF-8 encoded, 0-109   |
+   |         |                  | bytes)                               |
+   | 127     | 4 Bytes +        | long string (UTF-8 encoded)          |
+   |         | contents         |                                      |
+   | 128-159 |                  | (reserved)                           |
+   | 160-255 | 4 Bytes + value  | application types                    |
+   +---------+------------------+--------------------------------------+
+
+5.1.  Primitive Types
+
+   Integers between -128 and +127 MAY be encoded either in the short or
+   in the long form; all other integers MUST be encoded in the long
+   form.
+
+   Character strings (TDL type string) MUST be encoded in UTF-8, and MAY
+   be encoded in the short form if their length is smaller than 110.
+   The length of a UTF-8 string MUST denote the number of bytes (not the
+   number of characters).
+
+   Binary data MAY be encoded in the short form if it is less than 256
+   bytes.  The length transmitted MUST match the number of bytes in the
+   contents.
+
+5.2.  Structured Data
+
+   Messages, structs, and sequences are all encoded in the same way:
+   following the type tag, the fields are encoded in the sequence in
+   which they appear in the TDL specification.  Instead of the value of
+
+
+
+v. Loewis                                                       [Page 5]
+
+                   The Wire Protocol, version 3 (TWP3)      January 2010
+
+
+   the field, the "No Value" tag MAY be transmitted if the field is
+   declared as optional.  After the declared fields have been
+   transmitted, extensions MAY be sent.  If the sequence is complete, an
+   End-of-Content tag MUST be sent.
+
+   Unions are encoded using the union tag, if the alternative is below
+   7, followed by a single value.  Union alternatives above 7 must be
+   registered and transmitted as an extension.
+
+   When a field is declared with an any type, an extension value MUST be
+   sent.
+
+   When a field is declared with an any-defined-by type, a single value
+   of arbitrary type MUST be sent; the interpretation of this value is
+   depends on the "base" field.
+
+
+6.  Application Types
+
+   Tags 160-255 are available for application use; no support for
+   defining the transfer syntax of such data is available in TDL.  To
+   allow partial processing of application types, values are preceded by
+   a length field.
+
+
+7.  Extensions
+
+   A registered ID [REGISTRATION] may be used to identify either a
+   protocol, a message, a union alternative, or a structure.  An
+   extension message MAY be sent by either side for any TWP protocol; if
+   the peer does not understand the message, it MUST respond with a
+   MessageError message.  A TWP protocol MAY specify a default
+   processing for arbitrary extension messages (such as responding with
+   an alternative error message).
+
+7.1.  MessageError message
+
+   The MessageError message MAY be sent at any point by either side to
+   indicate that the the stream of TWP message became inconsistent.  The
+   side sending the MessageError message MUST close the TCP connection
+   after sending that message.  It is defined as
+
+                   message MessageError = ID 8 {
+                           int failed_msg_typs;
+                           string error_text;
+                   }
+
+
+
+
+
+v. Loewis                                                       [Page 6]
+
+                   The Wire Protocol, version 3 (TWP3)      January 2010
+
+
+8.  Examples
+
+8.1.  TDL
+
+   The following specification describes the messages that can be used
+   to implement a object remote-procedure infrastructure using TWP.
+
+                   protocol RPC = ID 1 {
+                           message Request = 0 {
+                                   int request_id;
+                                   int response_expected; /* 0 or 1 */
+                                   string operation;
+                                   any defined by operation parameters;
+                           }
+                           message Reply = 1{
+                                   int request_id;
+                                   any defined by request_id result;
+                           }
+                           message CancelRequest = 2 {
+                                   int request_id;
+                           }
+                           message CloseConnection = 4 {
+                           }
+                           struct RPCException = ID 3 {
+                             string text;
+                           }
+                   }
+
+8.2.  Mapping from CORBA to the RPC protocol
+
+   For the RPC protocol, the definition of an RPC interface in a subset
+   of CORBA IDL is assumed, with the following restrictions:
+
+   o  Only the IDL types string, int, octet, struct, union, and sequence
+      are allowed.  Interfaces must not be used as types.
+
+   o  Per RPC end-point, there is only a single object offering a
+      certain interface.
+
+   With these restrictions, operations on the IDL interface can be
+   invoked as follows:
+
+   o  The client sends a Request message, picking a request_id unique
+      for the TWP connection.  The server responds with a Reply message,
+      filling in the request_id received from the client.
+
+   o  The IDL operation name is send in the operation field of the
+      Request.
+
+
+
+v. Loewis                                                       [Page 7]
+
+                   The Wire Protocol, version 3 (TWP3)      January 2010
+
+
+   o  The IDL in and inout parameters are mapped to a struct which is
+      send in the parameters field.  If there are no parameters at all,
+      a No Value field is sent; if there is only a single parameter, no
+      struct is wrapped around it.
+
+   o  The server sends the result and all inout and out parameters in a
+      struct which is put into the result field.  If there is a single
+      return value only, no struct is sent, but the return value is put
+      into the result directly.  If there is no return value, the No
+      Value tag is sent as the result.  If an error occurred on the
+      server side, the server MAY fill the result with a value of type 3
+      (RPCException).  In that case, the server MAY put additional
+      extension structs in that RPCException to provide further detail
+      on the nature of the problem.
+
+   o  The client sets the response_expected flag unless the operation is
+      oneway.  For a oneway operation, the server sends no response.
+
+   o  The IDL types int, string, and union map to the same TDL types.
+      IDL's sequence<octet> maps to the TDL type binary; all other
+      sequence types map to a TDL sequence.  The IDL constructs
+      interface and typedef have, themselves, no correspondance in TWP
+      or TDL.
+
+8.3.  Byte sequence
+
+   Assuming a client would like to send a Request message according to
+   the RPC protocol specified above, one possible byte sequence
+   (immediately starting from TCP connection establishment) is shown in
+   the following table.  In this table, all bytes are shown using their
+   hexa-decimal values.
+
+                 +----------------+---------------------+
+                 | Bytes          | Interpretation      |
+                 +----------------+---------------------+
+                 | 54 57 50 33 0A | TWP3\n              |
+                 | 0D 01          | Protocol 1          |
+                 | 04             | Message 0           |
+                 | 0D 00          | request_id 0        |
+                 | 0D 01          | response_expected 1 |
+                 | 15 73 69 7A 65 | operation "size"    |
+                 | 01             | no parameters       |
+                 | 00             | end-of-message      |
+                 +----------------+---------------------+
+
+
+
+
+
+
+
+v. Loewis                                                       [Page 8]
+
+                   The Wire Protocol, version 3 (TWP3)      January 2010
+
+
+8.4.  Connection Shutdown
+
+   The client MAY close the connection at any time.  There server MUST
+   NOT close the connection while a request is still being processed,
+   and MUST send a CloseConnection message before closing the
+   connection; after sending CloseConnection, the server MUST NOT send
+   any further messages.  The client MUST NOT send CloseConnection
+   messages.  Upon reception of CloseConnection, the client can assume
+   that those requests for which no answer was received have not been
+   processed by the server.
+
+
+9.  Acknowledgements
+
+   The author would like to thank Peter Troeger, Andreas Rasche and Uwe
+   Hentschel for finding and eliminating bugs in the initial versions of
+   this memo
+
+
+10.  IANA Considerations
+
+   If this would ever become an internet standard, IANA would have to
+   operate the assignment of extension IDs.
+
+
+11.  Security Considerations
+
+   This protocol does not include any security mechanisms.  All data are
+   transmitted unencrypted, and communication partners are not mutually
+   authenticated.  Specific TWP protocols may provide such functions.
+
+
+12.  Revision History
+
+12.1.  October 20, 2009
+
+   Initial Revision
+
+12.2.  January 8, 2010
+
+   Remove trailing semicolon from unionddef, as this was inconsistent
+   compared to structdef and messagedef.
+
+
+13.  References
+
+
+
+
+
+
+v. Loewis                                                       [Page 9]
+
+                   The Wire Protocol, version 3 (TWP3)      January 2010
+
+
+13.1.  Normative References
+
+   [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
+              Requirement Levels", BCP 14, RFC 2119, March 1997.
+
+   [RFC4234]  Crocker, D. and P. Overell, "Augmented BNF for Syntax
+              Specifications: ABNF", RFC 4234, October 2005.
+
+13.2.  Informative References
+
+   [REGISTRATION]
+              Hasso-Plattner-Institut, "Registry for Extensions", 2009,
+              <https://www.dcl.hpi.uni-potsdam.de/twp3-extensions>.
+
+
+Author's Address
+
+   Martin v. Loewis
+   Hasso-Plattner-Institut
+   Potsdam,
+   Germany
+
+   Email: martin.vonloewis@hpi.uni-potsdam.de
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+v. Loewis                                                      [Page 10]
+
+

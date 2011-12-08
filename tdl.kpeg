@@ -1,0 +1,38 @@
+%% name         = ::TWP::TDL::Parser
+%% ast-location = ::TWP::TDL
+
+# 4.1.  Lexical rules
+ALPHA           = /[A-Za-z]/
+DIGIT           = /[0-9]/
+LETTER          = ALPHA | "_"
+identifier      = <LETTER (LETTER | DIGIT)*>
+number          = <DIGIT*>
+-               = /\s*(\/\*.*\*\/)?\s*/
+
+# 4.2.  Types
+type            = "any" - "defined" - "by" - identifier
+                | - primitiveType:type -
+                | - identifier:type -
+primitiveType   = "int"
+                | "string"
+                | "binary"
+                | "any"
+
+# 4.3.  Type Definitions
+typedef         = structdef | sequencedef | uniondef | forwarddef
+structdef       = - "struct" - identifier:name - ("=" - "ID" - number:id -)? "{" - field+:fields - "}" -
+field           = - <"optional"?> - type:type - identifier:name - ";" -
+sequencedef     = - "sequence" - "<" - type:type - ">" - identifier:name - ";" -
+uniondef        = - "union" - identifier:name - "{" - casedef+:cases - "}" -
+casedef         = - "case" - number:id - ":" - type:type - identifier:name - ";" -
+forwarddef      = - "typedef" - identifier:name - ";" -
+
+# 4.4.  Messages
+messagedef      = - "message" - identifier:name - "=" - ( number | "ID" - number ):id - "{" - (field*):fields - "}" -
+
+# 4.5.  Protocols
+protocol        = - "protocol" - identifier:name - "=" - "ID" - number:id - "{" - (protocolelement+):elements - "}" -
+protocolelement = typedef | messagedef
+
+# 4.6.  Specifications
+root            = (protocol | messagedef | structdef):element+

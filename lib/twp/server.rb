@@ -13,11 +13,11 @@ module TWP
     def connect
       log "listening on #{host}:#{port}"
       @connection = TCPServer.new host, port
+      @sessions = []
     end
 
-    def setup(parameter)
+    def setup(parameter = nil)
       yield self if block_given?
-      @sessions = []
     end
 
     def start

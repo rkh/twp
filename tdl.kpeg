@@ -1,38 +1,53 @@
-%% name         = ::TWP::TDL::Parser
-%% ast-location = ::TWP::TDL
+%% { attr_accessor :ast }
+%% name           = ::TWP::TDL::Parser
+%% ast-location   = ::TWP::TDL
+%% protocol       = ast Protocol(name, id, elements)
+%% message        = ast Message(name, id, fields)
+%% struct         = ast Struct(name, id, fields)
+%% sequence       = ast Sequence(name, type)
+%% field          = ast Field(name, type, optional)
+%% primitive_type = ast PrimitiveType(type)
+%% defined_by     = ast DefinedBy(name)
+%% type           = ast Type(name)
+%% root           = ast Root(elements)
 
 # 4.1.  Lexical rules
 ALPHA           = /[A-Za-z]/
 DIGIT           = /[0-9]/
 LETTER          = ALPHA | "_"
-identifier      = <LETTER (LETTER | DIGIT)*>
-number          = <DIGIT*>
+identifier      = <LETTER (LETTER | DIGIT)*> { text }
+number          = <DIGIT*> { Integer text }
 -               = /\s*(\/\*.*\*\/)?\s*/
 
 # 4.2.  Types
-type            = "any" - "defined" - "by" - identifier
-                | - primitiveType:type -
-                | - identifier:type -
-primitiveType   = "int"
-                | "string"
-                | "binary"
-                | "any"
+type            = "any" - "defined" - "by" - identifier:name ~defined_by(name)
+                | - primitiveType:type - ~primitive_type(type)
+                | - identifier:type - ~type(type)
+primitiveType   = <"int" | "string" | "binary" | "any"> ~text
 
 # 4.3.  Type Definitions
 typedef         = structdef | sequencedef | uniondef | forwarddef
 structdef       = - "struct" - identifier:name - ("=" - "ID" - number:id -)? "{" - field+:fields - "}" -
+                  ~struct(name, id, fields)
 field           = - <"optional"?> - type:type - identifier:name - ";" -
+                  ~field(name, type, text == "optional")
 sequencedef     = - "sequence" - "<" - type:type - ">" - identifier:name - ";" -
+                  ~sequence(name, type)
 uniondef        = - "union" - identifier:name - "{" - casedef+:cases - "}" -
+                  ~union(name, cases)
 casedef         = - "case" - number:id - ":" - type:type - identifier:name - ";" -
+                  ~casedef(id, type, name)
 forwarddef      = - "typedef" - identifier:name - ";" -
+                  ~typedef(name)
 
 # 4.4.  Messages
 messagedef      = - "message" - identifier:name - "=" - ( number | "ID" - number ):id - "{" - (field*):fields - "}" -
+                  ~message(name, id, fields)
 
 # 4.5.  Protocols
 protocol        = - "protocol" - identifier:name - "=" - "ID" - number:id - "{" - (protocolelement+):elements - "}" -
+                  ~protocol(name, id, elements)
 protocolelement = typedef | messagedef
 
 # 4.6.  Specifications
-root            = (protocol | messagedef | structdef):element+
+root            = (protocol | messagedef | structdef)+:elements  { @ast = root(elements) }

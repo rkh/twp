@@ -1,0 +1,10 @@
+protocol Echo = ID 2{
+  message Request=0{
+    string text;
+  }
+
+  message Reply=1{
+    string text;
+    int number_of_letters;
+  }
+}

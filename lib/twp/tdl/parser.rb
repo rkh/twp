@@ -1,6 +1,114 @@
+# THIS CODE HAS BEEN GENERATED!
+
 require 'kpeg/compiled_parser'
 
 class ::TWP::TDL::Parser < KPeg::CompiledParser
+
+ attr_accessor :ast 
+
+
+  module ::TWP::TDL
+    class Node; end
+    class DefinedBy < Node
+      def initialize(name)
+        @name = name
+      end
+      attr_reader :name
+    end
+    class Field < Node
+      def initialize(name, type, optional)
+        @name = name
+        @type = type
+        @optional = optional
+      end
+      attr_reader :name
+      attr_reader :type
+      attr_reader :optional
+    end
+    class Message < Node
+      def initialize(name, id, fields)
+        @name = name
+        @id = id
+        @fields = fields
+      end
+      attr_reader :name
+      attr_reader :id
+      attr_reader :fields
+    end
+    class PrimitiveType < Node
+      def initialize(type)
+        @type = type
+      end
+      attr_reader :type
+    end
+    class Protocol < Node
+      def initialize(name, id, elements)
+        @name = name
+        @id = id
+        @elements = elements
+      end
+      attr_reader :name
+      attr_reader :id
+      attr_reader :elements
+    end
+    class Root < Node
+      def initialize(elements)
+        @elements = elements
+      end
+      attr_reader :elements
+    end
+    class Sequence < Node
+      def initialize(name, type)
+        @name = name
+        @type = type
+      end
+      attr_reader :name
+      attr_reader :type
+    end
+    class Struct < Node
+      def initialize(name, id, fields)
+        @name = name
+        @id = id
+        @fields = fields
+      end
+      attr_reader :name
+      attr_reader :id
+      attr_reader :fields
+    end
+    class Type < Node
+      def initialize(name)
+        @name = name
+      end
+      attr_reader :name
+    end
+  end
+  def defined_by(name)
+    ::TWP::TDL::DefinedBy.new(name)
+  end
+  def field(name, type, optional)
+    ::TWP::TDL::Field.new(name, type, optional)
+  end
+  def message(name, id, fields)
+    ::TWP::TDL::Message.new(name, id, fields)
+  end
+  def primitive_type(type)
+    ::TWP::TDL::PrimitiveType.new(type)
+  end
+  def protocol(name, id, elements)
+    ::TWP::TDL::Protocol.new(name, id, elements)
+  end
+  def root(elements)
+    ::TWP::TDL::Root.new(elements)
+  end
+  def sequence(name, type)
+    ::TWP::TDL::Sequence.new(name, type)
+  end
+  def struct(name, id, fields)
+    ::TWP::TDL::Struct.new(name, id, fields)
+  end
+  def type(name)
+    ::TWP::TDL::Type.new(name)
+  end
 
   # ALPHA = /[A-Za-z]/
   def _ALPHA
@@ -34,32 +142,50 @@ class ::TWP::TDL::Parser < KPeg::CompiledParser
     return _tmp
   end
 
-  # identifier = < LETTER (LETTER | DIGIT)* >
+  # identifier = < LETTER (LETTER | DIGIT)* > { text }
   def _identifier
-    _text_start = self.pos
 
     _save = self.pos
     while true # sequence
-      _tmp = apply(:_LETTER)
+      _text_start = self.pos
+
+      _save1 = self.pos
+      while true # sequence
+        _tmp = apply(:_LETTER)
+        unless _tmp
+          self.pos = _save1
+          break
+        end
+        while true
+
+          _save3 = self.pos
+          while true # choice
+            _tmp = apply(:_LETTER)
+            break if _tmp
+            self.pos = _save3
+            _tmp = apply(:_DIGIT)
+            break if _tmp
+            self.pos = _save3
+            break
+          end # end choice
+
+          break unless _tmp
+        end
+        _tmp = true
+        unless _tmp
+          self.pos = _save1
+        end
+        break
+      end # end sequence
+
+      if _tmp
+        text = get_text(_text_start)
+      end
       unless _tmp
         self.pos = _save
         break
       end
-      while true
-
-        _save2 = self.pos
-        while true # choice
-          _tmp = apply(:_LETTER)
-          break if _tmp
-          self.pos = _save2
-          _tmp = apply(:_DIGIT)
-          break if _tmp
-          self.pos = _save2
-          break
-        end # end choice
-
-        break unless _tmp
-      end
+      @result = begin;  text ; end
       _tmp = true
       unless _tmp
         self.pos = _save
@@ -67,24 +193,36 @@ class ::TWP::TDL::Parser < KPeg::CompiledParser
       break
     end # end sequence
 
-    if _tmp
-      text = get_text(_text_start)
-    end
     set_failed_rule :_identifier unless _tmp
     return _tmp
   end
 
-  # number = < DIGIT* >
+  # number = < DIGIT* > { Integer text }
   def _number
-    _text_start = self.pos
-    while true
-      _tmp = apply(:_DIGIT)
-      break unless _tmp
-    end
-    _tmp = true
-    if _tmp
-      text = get_text(_text_start)
-    end
+
+    _save = self.pos
+    while true # sequence
+      _text_start = self.pos
+      while true
+        _tmp = apply(:_DIGIT)
+        break unless _tmp
+      end
+      _tmp = true
+      if _tmp
+        text = get_text(_text_start)
+      end
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      @result = begin;  Integer text ; end
+      _tmp = true
+      unless _tmp
+        self.pos = _save
+      end
+      break
+    end # end sequence
+
     set_failed_rule :_number unless _tmp
     return _tmp
   end
@@ -96,7 +234,7 @@ class ::TWP::TDL::Parser < KPeg::CompiledParser
     return _tmp
   end
 
-  # type = ("any" - "defined" - "by" - identifier | - primitiveType:type - | - identifier:type -)
+  # type = ("any" - "defined" - "by" - identifier:name {defined_by(name)} | - primitiveType:type - {primitive_type(type)} | - identifier:type - {type(type)})
   def _type
 
     _save = self.pos
@@ -135,6 +273,13 @@ class ::TWP::TDL::Parser < KPeg::CompiledParser
           break
         end
         _tmp = apply(:_identifier)
+        name = @result
+        unless _tmp
+          self.pos = _save1
+          break
+        end
+        @result = begin; defined_by(name); end
+        _tmp = true
         unless _tmp
           self.pos = _save1
         end
@@ -160,6 +305,12 @@ class ::TWP::TDL::Parser < KPeg::CompiledParser
         _tmp = apply(:__hyphen_)
         unless _tmp
           self.pos = _save2
+          break
+        end
+        @result = begin; primitive_type(type); end
+        _tmp = true
+        unless _tmp
+          self.pos = _save2
         end
         break
       end # end sequence
@@ -183,6 +334,12 @@ class ::TWP::TDL::Parser < KPeg::CompiledParser
         _tmp = apply(:__hyphen_)
         unless _tmp
           self.pos = _save3
+          break
+        end
+        @result = begin; type(type); end
+        _tmp = true
+        unless _tmp
+          self.pos = _save3
         end
         break
       end # end sequence
@@ -196,25 +353,44 @@ class ::TWP::TDL::Parser < KPeg::CompiledParser
     return _tmp
   end
 
-  # primitiveType = ("int" | "string" | "binary" | "any")
+  # primitiveType = < ("int" | "string" | "binary" | "any") > {text}
   def _primitiveType
 
     _save = self.pos
-    while true # choice
-      _tmp = match_string("int")
-      break if _tmp
-      self.pos = _save
-      _tmp = match_string("string")
-      break if _tmp
-      self.pos = _save
-      _tmp = match_string("binary")
-      break if _tmp
-      self.pos = _save
-      _tmp = match_string("any")
-      break if _tmp
-      self.pos = _save
+    while true # sequence
+      _text_start = self.pos
+
+      _save1 = self.pos
+      while true # choice
+        _tmp = match_string("int")
+        break if _tmp
+        self.pos = _save1
+        _tmp = match_string("string")
+        break if _tmp
+        self.pos = _save1
+        _tmp = match_string("binary")
+        break if _tmp
+        self.pos = _save1
+        _tmp = match_string("any")
+        break if _tmp
+        self.pos = _save1
+        break
+      end # end choice
+
+      if _tmp
+        text = get_text(_text_start)
+      end
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      @result = begin; text; end
+      _tmp = true
+      unless _tmp
+        self.pos = _save
+      end
       break
-    end # end choice
+    end # end sequence
 
     set_failed_rule :_primitiveType unless _tmp
     return _tmp
@@ -244,7 +420,7 @@ class ::TWP::TDL::Parser < KPeg::CompiledParser
     return _tmp
   end
 
-  # structdef = - "struct" - identifier:name - ("=" - "ID" - number:id -)? "{" - field+:fields - "}" -
+  # structdef = - "struct" - identifier:name - ("=" - "ID" - number:id -)? "{" - field+:fields - "}" - {struct(name, id, fields)}
   def _structdef
 
     _save = self.pos
@@ -363,6 +539,12 @@ class ::TWP::TDL::Parser < KPeg::CompiledParser
       _tmp = apply(:__hyphen_)
       unless _tmp
         self.pos = _save
+        break
+      end
+      @result = begin; struct(name, id, fields); end
+      _tmp = true
+      unless _tmp
+        self.pos = _save
       end
       break
     end # end sequence
@@ -371,7 +553,7 @@ class ::TWP::TDL::Parser < KPeg::CompiledParser
     return _tmp
   end
 
-  # field = - < "optional"? > - type:type - identifier:name - ";" -
+  # field = - < "optional"? > - type:type - identifier:name - ";" - {field(name, type, text == "optional")}
   def _field
 
     _save = self.pos
@@ -430,6 +612,12 @@ class ::TWP::TDL::Parser < KPeg::CompiledParser
       _tmp = apply(:__hyphen_)
       unless _tmp
         self.pos = _save
+        break
+      end
+      @result = begin; field(name, type, text == "optional"); end
+      _tmp = true
+      unless _tmp
+        self.pos = _save
       end
       break
     end # end sequence
@@ -438,7 +626,7 @@ class ::TWP::TDL::Parser < KPeg::CompiledParser
     return _tmp
   end
 
-  # sequencedef = - "sequence" - "<" - type:type - ">" - identifier:name - ";" -
+  # sequencedef = - "sequence" - "<" - type:type - ">" - identifier:name - ";" - {sequence(name, type)}
   def _sequencedef
 
     _save = self.pos
@@ -508,6 +696,12 @@ class ::TWP::TDL::Parser < KPeg::CompiledParser
       _tmp = apply(:__hyphen_)
       unless _tmp
         self.pos = _save
+        break
+      end
+      @result = begin; sequence(name, type); end
+      _tmp = true
+      unless _tmp
+        self.pos = _save
       end
       break
     end # end sequence
@@ -516,7 +710,7 @@ class ::TWP::TDL::Parser < KPeg::CompiledParser
     return _tmp
   end
 
-  # uniondef = - "union" - identifier:name - "{" - casedef+:cases - "}" -
+  # uniondef = - "union" - identifier:name - "{" - casedef+:cases - "}" - {union(name, cases)}
   def _uniondef
 
     _save = self.pos
@@ -590,6 +784,12 @@ class ::TWP::TDL::Parser < KPeg::CompiledParser
       _tmp = apply(:__hyphen_)
       unless _tmp
         self.pos = _save
+        break
+      end
+      @result = begin; union(name, cases); end
+      _tmp = true
+      unless _tmp
+        self.pos = _save
       end
       break
     end # end sequence
@@ -598,7 +798,7 @@ class ::TWP::TDL::Parser < KPeg::CompiledParser
     return _tmp
   end
 
-  # casedef = - "case" - number:id - ":" - type:type - identifier:name - ";" -
+  # casedef = - "case" - number:id - ":" - type:type - identifier:name - ";" - {casedef(id, type, name)}
   def _casedef
 
     _save = self.pos
@@ -669,6 +869,12 @@ class ::TWP::TDL::Parser < KPeg::CompiledParser
       _tmp = apply(:__hyphen_)
       unless _tmp
         self.pos = _save
+        break
+      end
+      @result = begin; casedef(id, type, name); end
+      _tmp = true
+      unless _tmp
+        self.pos = _save
       end
       break
     end # end sequence
@@ -677,7 +883,7 @@ class ::TWP::TDL::Parser < KPeg::CompiledParser
     return _tmp
   end
 
-  # forwarddef = - "typedef" - identifier:name - ";" -
+  # forwarddef = - "typedef" - identifier:name - ";" - {typedef(name)}
   def _forwarddef
 
     _save = self.pos
@@ -716,6 +922,12 @@ class ::TWP::TDL::Parser < KPeg::CompiledParser
       _tmp = apply(:__hyphen_)
       unless _tmp
         self.pos = _save
+        break
+      end
+      @result = begin; typedef(name); end
+      _tmp = true
+      unless _tmp
+        self.pos = _save
       end
       break
     end # end sequence
@@ -724,7 +936,7 @@ class ::TWP::TDL::Parser < KPeg::CompiledParser
     return _tmp
   end
 
-  # messagedef = - "message" - identifier:name - "=" - (number | "ID" - number):id - "{" - field*:fields - "}" -
+  # messagedef = - "message" - identifier:name - "=" - (number | "ID" - number):id - "{" - field*:fields - "}" - {message(name, id, fields)}
   def _messagedef
 
     _save = self.pos
@@ -842,6 +1054,12 @@ class ::TWP::TDL::Parser < KPeg::CompiledParser
       _tmp = apply(:__hyphen_)
       unless _tmp
         self.pos = _save
+        break
+      end
+      @result = begin; message(name, id, fields); end
+      _tmp = true
+      unless _tmp
+        self.pos = _save
       end
       break
     end # end sequence
@@ -850,7 +1068,7 @@ class ::TWP::TDL::Parser < KPeg::CompiledParser
     return _tmp
   end
 
-  # protocol = - "protocol" - identifier:name - "=" - "ID" - number:id - "{" - protocolelement+:elements - "}" -
+  # protocol = - "protocol" - identifier:name - "=" - "ID" - number:id - "{" - protocolelement+:elements - "}" - {protocol(name, id, elements)}
   def _protocol
 
     _save = self.pos
@@ -955,6 +1173,12 @@ class ::TWP::TDL::Parser < KPeg::CompiledParser
       _tmp = apply(:__hyphen_)
       unless _tmp
         self.pos = _save
+        break
+      end
+      @result = begin; protocol(name, id, elements); end
+      _tmp = true
+      unless _tmp
+        self.pos = _save
       end
       break
     end # end sequence
@@ -981,49 +1205,67 @@ class ::TWP::TDL::Parser < KPeg::CompiledParser
     return _tmp
   end
 
-  # root = (protocol | messagedef | structdef):element+
+  # root = (protocol | messagedef | structdef)+:elements { @ast = root(elements) }
   def _root
+
     _save = self.pos
+    while true # sequence
+      _save1 = self.pos
+      _ary = []
 
-    _save1 = self.pos
-    while true # choice
-      _tmp = apply(:_protocol)
-      break if _tmp
-      self.pos = _save1
-      _tmp = apply(:_messagedef)
-      break if _tmp
-      self.pos = _save1
-      _tmp = apply(:_structdef)
-      break if _tmp
-      self.pos = _save1
-      break
-    end # end choice
+      _save2 = self.pos
+      while true # choice
+        _tmp = apply(:_protocol)
+        break if _tmp
+        self.pos = _save2
+        _tmp = apply(:_messagedef)
+        break if _tmp
+        self.pos = _save2
+        _tmp = apply(:_structdef)
+        break if _tmp
+        self.pos = _save2
+        break
+      end # end choice
 
-    element = @result
-    if _tmp
-      while true
+      if _tmp
+        _ary << @result
+        while true
 
-        _save2 = self.pos
-        while true # choice
-          _tmp = apply(:_protocol)
-          break if _tmp
-          self.pos = _save2
-          _tmp = apply(:_messagedef)
-          break if _tmp
-          self.pos = _save2
-          _tmp = apply(:_structdef)
-          break if _tmp
-          self.pos = _save2
-          break
-        end # end choice
+          _save3 = self.pos
+          while true # choice
+            _tmp = apply(:_protocol)
+            break if _tmp
+            self.pos = _save3
+            _tmp = apply(:_messagedef)
+            break if _tmp
+            self.pos = _save3
+            _tmp = apply(:_structdef)
+            break if _tmp
+            self.pos = _save3
+            break
+          end # end choice
 
-        element = @result
-        break unless _tmp
+          _ary << @result if _tmp
+          break unless _tmp
+        end
+        _tmp = true
+        @result = _ary
+      else
+        self.pos = _save1
       end
+      elements = @result
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      @result = begin;  @ast = root(elements) ; end
       _tmp = true
-    else
-      self.pos = _save
-    end
+      unless _tmp
+        self.pos = _save
+      end
+      break
+    end # end sequence
+
     set_failed_rule :_root unless _tmp
     return _tmp
   end
@@ -1032,20 +1274,20 @@ class ::TWP::TDL::Parser < KPeg::CompiledParser
   Rules[:_ALPHA] = rule_info("ALPHA", "/[A-Za-z]/")
   Rules[:_DIGIT] = rule_info("DIGIT", "/[0-9]/")
   Rules[:_LETTER] = rule_info("LETTER", "(ALPHA | \"_\")")
-  Rules[:_identifier] = rule_info("identifier", "< LETTER (LETTER | DIGIT)* >")
-  Rules[:_number] = rule_info("number", "< DIGIT* >")
+  Rules[:_identifier] = rule_info("identifier", "< LETTER (LETTER | DIGIT)* > { text }")
+  Rules[:_number] = rule_info("number", "< DIGIT* > { Integer text }")
   Rules[:__hyphen_] = rule_info("-", "/\\s*(\\/\\*.*\\*\\/)?\\s*/")
-  Rules[:_type] = rule_info("type", "(\"any\" - \"defined\" - \"by\" - identifier | - primitiveType:type - | - identifier:type -)")
-  Rules[:_primitiveType] = rule_info("primitiveType", "(\"int\" | \"string\" | \"binary\" | \"any\")")
+  Rules[:_type] = rule_info("type", "(\"any\" - \"defined\" - \"by\" - identifier:name {defined_by(name)} | - primitiveType:type - {primitive_type(type)} | - identifier:type - {type(type)})")
+  Rules[:_primitiveType] = rule_info("primitiveType", "< (\"int\" | \"string\" | \"binary\" | \"any\") > {text}")
   Rules[:_typedef] = rule_info("typedef", "(structdef | sequencedef | uniondef | forwarddef)")
-  Rules[:_structdef] = rule_info("structdef", "- \"struct\" - identifier:name - (\"=\" - \"ID\" - number:id -)? \"{\" - field+:fields - \"}\" -")
-  Rules[:_field] = rule_info("field", "- < \"optional\"? > - type:type - identifier:name - \";\" -")
-  Rules[:_sequencedef] = rule_info("sequencedef", "- \"sequence\" - \"<\" - type:type - \">\" - identifier:name - \";\" -")
-  Rules[:_uniondef] = rule_info("uniondef", "- \"union\" - identifier:name - \"{\" - casedef+:cases - \"}\" -")
-  Rules[:_casedef] = rule_info("casedef", "- \"case\" - number:id - \":\" - type:type - identifier:name - \";\" -")
-  Rules[:_forwarddef] = rule_info("forwarddef", "- \"typedef\" - identifier:name - \";\" -")
-  Rules[:_messagedef] = rule_info("messagedef", "- \"message\" - identifier:name - \"=\" - (number | \"ID\" - number):id - \"{\" - field*:fields - \"}\" -")
-  Rules[:_protocol] = rule_info("protocol", "- \"protocol\" - identifier:name - \"=\" - \"ID\" - number:id - \"{\" - protocolelement+:elements - \"}\" -")
+  Rules[:_structdef] = rule_info("structdef", "- \"struct\" - identifier:name - (\"=\" - \"ID\" - number:id -)? \"{\" - field+:fields - \"}\" - {struct(name, id, fields)}")
+  Rules[:_field] = rule_info("field", "- < \"optional\"? > - type:type - identifier:name - \";\" - {field(name, type, text == \"optional\")}")
+  Rules[:_sequencedef] = rule_info("sequencedef", "- \"sequence\" - \"<\" - type:type - \">\" - identifier:name - \";\" - {sequence(name, type)}")
+  Rules[:_uniondef] = rule_info("uniondef", "- \"union\" - identifier:name - \"{\" - casedef+:cases - \"}\" - {union(name, cases)}")
+  Rules[:_casedef] = rule_info("casedef", "- \"case\" - number:id - \":\" - type:type - identifier:name - \";\" - {casedef(id, type, name)}")
+  Rules[:_forwarddef] = rule_info("forwarddef", "- \"typedef\" - identifier:name - \";\" - {typedef(name)}")
+  Rules[:_messagedef] = rule_info("messagedef", "- \"message\" - identifier:name - \"=\" - (number | \"ID\" - number):id - \"{\" - field*:fields - \"}\" - {message(name, id, fields)}")
+  Rules[:_protocol] = rule_info("protocol", "- \"protocol\" - identifier:name - \"=\" - \"ID\" - number:id - \"{\" - protocolelement+:elements - \"}\" - {protocol(name, id, elements)}")
   Rules[:_protocolelement] = rule_info("protocolelement", "(typedef | messagedef)")
-  Rules[:_root] = rule_info("root", "(protocol | messagedef | structdef):element+")
+  Rules[:_root] = rule_info("root", "(protocol | messagedef | structdef)+:elements { @ast = root(elements) }")
 end

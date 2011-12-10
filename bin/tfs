@@ -1,4 +1,2 @@
 #!/usr/bin/env ruby
-$LOAD_PATH.unshift File.expand_path('../../lib', __FILE__)
-
-require 'twp'
+require_relative 'twp_setup'

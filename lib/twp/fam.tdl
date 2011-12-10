@@ -1,0 +1,25 @@
+protocol FAM = ID 4 {
+  sequence<string> path;
+  /* Messages sent for file creation, deletion, and change. */
+  message Changed = 0 {
+    path directory;
+    string filename;
+  }
+  message Deleted = 1 {
+    path directory;
+    string filename;
+  }
+  message Created = 2{
+    path directory;
+    string filename;
+  }
+  /* Messages sent when a file is being executed on the operating system */
+  message StartExecuting = 3 {
+    path directory;
+    string filename;
+  }
+  message StopExecuting = 4 {
+    path directory;
+    string filename;
+  }
+}

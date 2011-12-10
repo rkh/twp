@@ -1,4 +1,6 @@
 #!/usr/bin/env ruby
-$LOAD_PATH.unshift File.expand_path('../../lib', __FILE__)
-
-require 'twp'
+require_relative 'twp_setup'
+TWP::CLI.run TWP::Echo::Client do |line|
+  send_message(:Request, line)
+  read_message.inspect
+end

@@ -1,2 +1,3 @@
 #!/usr/bin/env ruby
 require_relative 'twp_setup'
+TWP::CLI.run TWP::Echo::Server

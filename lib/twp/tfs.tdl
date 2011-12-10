@@ -1,0 +1,76 @@
+protocol TFS = ID 1 { /* actually RPC */
+  sequence<string> path;
+  sequence<string> filelist;
+
+  struct list_result = ID 42 {
+    filelist directories;
+    filelist files;
+  }
+
+  struct stat_result = ID 43 {
+    int size;
+    int mtime;
+    int atime;
+  }
+
+  struct open_parameters = ID 44 {
+    path directory;
+    string file;
+    int mode;
+  }
+
+  struct read_parameters = ID 45 {
+    int fh;
+    int count;
+  }
+
+  struct write_parameters = ID 46 {
+    int fh;
+    binary data;
+  }
+
+  struct seek_parameters = ID 47 {
+    int fh;
+    int offset;
+  }
+
+  struct stat_parameters = ID 48 {
+    path directory;
+    string file;
+  }
+
+  struct remove_parameters = ID 49 {
+    path directory;
+    string file;
+  }
+
+  struct monitor_parameters = ID 50 {
+    path directory;
+    int recursive;
+    binary host;
+    int port;
+  }
+
+  message Request = 0 {
+    int request_id;
+    int response_expected; /* 0 or 1 */
+    string operation;
+    any defined by operation parameters;
+  }
+
+  message Reply = 1 {
+    int request_id;
+    any defined by request_id result;
+  }
+
+  message CancelRequest = 2 {
+    int request_id;
+  }
+
+  message CloseConnection = 4 {
+  }
+
+  struct RPCException = ID 3 {
+    string text;
+  }
+}

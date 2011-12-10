@@ -15,6 +15,7 @@ describe TWP::TDL::Parser do
       }
     TDL
 
+    tdl = tdl.elements.first
     tdl.should be_a(TWP::TDL::Protocol)
     tdl.elements.each do |element|
       element.should be_a(TWP::TDL::Message)

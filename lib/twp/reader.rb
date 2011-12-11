@@ -94,10 +94,7 @@ module TWP
         result = io.read_nonblock(count)
       end
       @last_activity = Time.now
-      if ENV['SHOW_STREAM'] and ENV['SHOW_STREAM'] != '0'
-        color = connection.server? ? 30 : 36
-        $stderr.print "\033[#{color}m#{result.inspect[1..-2]}\033[0m" 
-      end
+      $stderr.print "\033[30m#{result.inspect[1..-2]}\033[0m" if ENV['SHOW_STREAM'] and ENV['SHOW_STREAM'] != '0'
       new_buffer(result)
     end
 

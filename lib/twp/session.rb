@@ -29,7 +29,7 @@ module TWP
       log "dropping connection: #{error.message}"
       sessions.delete self
       begin
-        io << connection.encode(error)
+        connection.send_data error, io
         io.close
       rescue
       end

@@ -84,7 +84,7 @@ module TWP
     end
 
     def encode_message(msg)
-      marshal = msg.id < 8 ? (msg.id + 4).chr : [12, msg.id].pack('cl>')
+      marshal = msg.id < 8 ? (msg.id + 4).chr : [12, msg.id].pack('CL>')
       marshal.force_encoding('binary')
       msg.field_values.each { |f| marshal << encode(f) }
       marshal << "\0"

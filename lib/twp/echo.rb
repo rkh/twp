@@ -11,7 +11,7 @@ module TWP
 
       on_message(:Request) do |msg|
         log "received message: %p" % msg.text
-        send_message(:Reply, msg.text, msg.text.size)
+        send_message(:Reply, msg.text, msg.text.scan(/\w/).count)
       end
     end
   end

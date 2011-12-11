@@ -42,7 +42,9 @@ module TWP
         @connection.setup(command, &block)
         @connection.start
       elsif command
+        @connection.connect unless @connection.connected?
         puts @connection.instance_exec(command, &block)
+        @connection.disconnect unless @connection.server?
       else
         loop do
           print "> " if $stdin.tty?

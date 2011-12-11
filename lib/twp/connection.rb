@@ -17,6 +17,10 @@ module TWP
         not server?
       end
 
+      def connected?
+        true
+      end
+
       def inherited(klass)
         klass.timeout ||= klass.superclass.timeout
         super
@@ -109,7 +113,7 @@ module TWP
     end
 
     def close
-      connection.close if connection
+      connection.close if connection and not connection.closed?
     end
 
     def protocol

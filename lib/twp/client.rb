@@ -4,6 +4,10 @@ module TWP
       false
     end
 
+    def connected?
+      @connected
+    end
+
     def send_message(type, *fields)
       send_raw encode(message(type, *fields))
     end
@@ -14,13 +18,19 @@ module TWP
     end
 
     def connect
-      log "connecting to #{host}:#{port}"
+      debug "connecting to #{host}:#{port}"
       @connection = TCPSocket.new(host, port)
 
       debug "sending handshake"
       send_raw handshake
 
-      @reader = Reader.new(self, @connection)
+      @reader    = Reader.new(self, @connection)
+      @connected = true
+    end
+
+    def disconnect
+      close
+      @connected = false
     end
 
     def read_message

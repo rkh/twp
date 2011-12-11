@@ -19,11 +19,6 @@ module TWP
       send_raw encode(message(type, *fields))
     end
 
-    def send_raw(raw)
-      debug "sending: %p" % raw
-      @connection << raw
-    end
-
     def connect
       debug "connecting to #{host}:#{port}"
       @connection = TCPSocket.new(host, port)

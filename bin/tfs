@@ -11,8 +11,8 @@ module TFSTools
   end
 
   def fam(host, port, *dir)
-    server = TWP::FAM::Server.new(host, port)
-    puts "starting FAM server on #{host}:#{port}"
+    server = ::TWP::FAM::Server.new(host, port)
+    $stderr.puts "starting FAM server on #{host}:#{port}"
     handle = monitor(dir, 1, host, port)
     connection.disconnect
     server.start
@@ -23,7 +23,7 @@ module TFSTools
   end
 
   def tree(*dir, &block)
-    block ||= proc { |a| puts a }
+    block ||= ::Proc.new { |a| $stderr.puts a }
     list = listdir(dir)
     list.to_a.flatten.sort.each do |file|
       block[file]
@@ -44,11 +44,12 @@ module TFSTools
   end
 end
 
+TWP::TFS::Remote.send(:include, TFSTools)
+
 TWP::CLI.run TWP::TFS::Client do |command|
-  extend TFSTools
   cmd, *args = command.split(/[ \/]/)
-  if TFSTools.method_defined? cmd
-    public_send(cmd, *args)
+  if ::TFSTools.method_defined? cmd
+    __send__(cmd, *args)
   else
     "unkown command #{cmd}"
   end

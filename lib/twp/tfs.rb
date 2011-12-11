@@ -112,19 +112,11 @@ module TWP
     end
 
     class Remote < RPC::Remote
-      def write(*args)
-        method_missing(__method__, *args)
-      end
-
-      def open(*args)
-        method_missing(__method__, *args)
-      end
-
-      def listdir(*args)
+      def listdir(directory)
         ListResult.new(*super)
       end
 
-      def stat(*args)
+      def stat(directory, file)
         StatResult.new(*super)
       end
     end

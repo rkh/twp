@@ -27,8 +27,8 @@ module TWP
         not remote?
       end
 
-      def method_missing(*args)
-        @connection.send_rpc(*args)
+      def method_missing(method, *args)
+        connection.send_rpc(method, *args)
       end
     end
 

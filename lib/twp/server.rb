@@ -2,7 +2,7 @@ require 'ostruct'
 
 module TWP
   class Server < Connection
-    self.timeout = 120
+    self.timeout = 10
 
     def self.server?
       true

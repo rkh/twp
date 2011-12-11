@@ -75,9 +75,14 @@ module TWP
     end
 
     def read_bytes!(count)
-      result = new_buffer(blocking? ? io.read(count) : io.read_nonblock(count))
+      if blocking?
+        result = io.read(count)
+        raise PeerError, "stream closed" unless result
+      else
+        result = io.read_nonblock(count)
+      end
       @last_activity = Time.now
-      result
+      new_buffer(result)
     end
 
     # like read_bytes! but with a buffer

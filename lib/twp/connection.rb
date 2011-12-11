@@ -54,13 +54,13 @@ module TWP
 
     def encode(object)
       case object
-      when NilClass   then "\1"
-      when Integer    then encode_int(object)
-      when String     then object.encoding == Encoding::BINARY ? encode_binary(object) : encode_string(object)
-      when Message    then encode_message(object)
-      when Exception  then encode_exception(object)
-      when Struct     then encode_struct(object)
-      when Array      then encode_sequence(object)
+      when NilClass                       then "\1"
+      when Integer                        then encode_int(object)
+      when String                         then object.encoding == Encoding::BINARY ? encode_binary(object) : encode_string(object)
+      when Message                        then encode_message(object)
+      when Exception                      then encode_exception(object)
+      when Struct, TWP::RPC::CheapStruct  then encode_struct(object)
+      when Array                          then encode_sequence(object)
       else raise NotImplementedError, 'cannot encode %p' % object
       end
     end
@@ -95,7 +95,7 @@ module TWP
     end
 
     def encode_struct(struct)
-      encode_sequence(struct, 2)
+      encode_sequence(struct.to_a, 2)
     end
 
     def encode_sequence(array, tag = 3)
@@ -111,7 +111,12 @@ module TWP
     end
 
     def send_data(data, io = @connection)
-      io << encode(data)
+      send_raw encode(data), io
+    end
+
+    def send_raw(raw, io = @connection)
+      $stderr.print "\033[36m#{raw.inspect[1..-2]}\033[0m" if ENV['SHOW_STREAM'] and ENV['SHOW_STREAM'] != '0'
+      io << raw
     end
 
     def scope

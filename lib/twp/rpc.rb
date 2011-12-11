@@ -2,10 +2,17 @@ module TWP
   module RPC
     RPC_SPEC = TWP.load_tdl(:rpc)
 
+    class CheapStruct
+      attr_accessor :to_a
+      def initialize(to_a)
+        @to_a = to_a
+      end
+    end
+
     class RPCException < PeerError
     end
 
-    class Remote
+    class Remote < BasicObject
       attr_accessor :connection
 
       def initialize(connection)
@@ -37,8 +44,9 @@ module TWP
       end
 
       def send_rpc(operation, *args)
-        response_expected = response_expected? operation.to_sym
-        send_message :Request, request_id, response_expected ? 1 : 0, operation.to_s, structify(*args)
+        response_expected = response_expected?(operation.to_sym)
+        struct = args.size == 1 ? args.first : CheapStruct.new(args)
+        send_message :Request, request_id, response_expected ? 1 : 0, operation.to_s, struct
         return unless response_expected
         result = read_message.result
         raise RPCException, result.text if result.is_a? Message and result.name == :RPCException
@@ -48,12 +56,6 @@ module TWP
       def request_id
         @request_id ||= 0
         @request_id += 1
-      end
-
-      def structify(*args)
-        return nil unless args.any?
-        struct = Struct.new(*args.size.times.map { |i| :"arg_#{i}" })
-        struct.new(*args)
       end
     end
 

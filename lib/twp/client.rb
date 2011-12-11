@@ -1,5 +1,12 @@
 module TWP
   class Client < Connection
+    def self.open(*args)
+      client = new(*args)
+      yield client
+    ensure
+      client.close
+    end
+
     def self.server?
       false
     end

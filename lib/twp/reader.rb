@@ -49,18 +49,27 @@ module TWP
       @recent.clear
     end
 
+    def read_sequence(into = [])
+      while tag = read_pattern(1, 'C')
+        break if tag == 0
+        into << read_data!(tag)
+      end
+      into
+    end
+
     def read_data!(tag = nil)
       case tag ||= read_bytes(1).ord
       when 0        then raise PeerError, 'unexpected EoC'
       when 1        then nil
+      when 2, 3     then read_sequence
       when 4..12    then read_method(tag)
       when 13       then read_short
       when 14       then read_long
-      when 15       then read_bytes(read_short).encode('binary')
-      when 16       then read_bytes(read_long).encode('binary')
-      when 17..126  then read_bytes(tag - 17).encode('utf-8')
-      when 127      then read_bytes(read_long).encode('utf-8')
-      else raise NotImplementedError, 'no support'
+      when 15       then read_bytes(read_pattern(1, 'C')).force_encoding('binary')
+      when 16       then read_bytes(read_pattern(4, 'L>')).force_encoding('binary')
+      when 17..126  then read_bytes(tag - 17).force_encoding('utf-8')
+      when 127      then read_bytes(read_long).force_encoding('utf-8')
+      else raise NotImplementedError, 'no support for tag %p' % tag
       end
     end
 
@@ -69,11 +78,7 @@ module TWP
       raise read_error if type == 8
       message = Message.new(connection, type)
       connection.last_message = message
-      while tag = read_short
-        break if tag == 0
-        message << read_data!(tag)
-      end
-      message
+      read_sequence(message)
     end
 
     def read_error
@@ -89,6 +94,10 @@ module TWP
         result = io.read_nonblock(count)
       end
       @last_activity = Time.now
+      if ENV['SHOW_STREAM'] and ENV['SHOW_STREAM'] != '0'
+        color = connection.server? ? 30 : 36
+        $stderr.print "\033[#{color}m#{result.inspect[1..-2]}\033[0m" 
+      end
       new_buffer(result)
     end
 

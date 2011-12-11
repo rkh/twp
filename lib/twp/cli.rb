@@ -43,7 +43,7 @@ module TWP
         @connection.start
       elsif command
         @connection.connect unless @connection.connected?
-        puts @connection.instance_exec(command, &block)
+        puts @connection.scope.instance_exec(command, &block)
         @connection.disconnect unless @connection.server?
       else
         loop do

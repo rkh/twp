@@ -11,6 +11,6 @@ desc 'Compile files'
 task build: 'lib/twp/tdl/parser.rb'
 
 desc 'Run specs'
-RSpec::Core::RakeTask.new { |t| t.pattern = './spec/**/*_spec.rb' }
+task(:spec) { system "rspec spec -c" }
 
 task default: [:build, :spec]

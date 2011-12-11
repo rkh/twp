@@ -1,2 +1,51 @@
 #!/usr/bin/env ruby
 require_relative 'twp_setup'
+
+module TFSTools
+  def ls(*dir)
+    listdir(dir).to_a.flatten.sort.join(" ")
+  end
+
+  def fam(host, port, *dir)
+    server = TWP::FAM::Server.new(host, port)
+    puts "starting FAM server on #{host}:#{port}"
+    handle = monitor(dir, 1, host, port)
+    connection.disconnect
+    server.start
+    "done"
+  ensure
+    connection.connect
+    stop_monitoring(handle) if handle
+  end
+
+  def tree(*dir, &block)
+    block ||= proc { |a| puts a }
+    list = listdir(dir)
+    list.to_a.flatten.sort.each do |file|
+      block[file]
+      tree(*dir, file) { |f| block["  #{f}"] } if list.directories.include? file
+    end
+  end
+
+  def append(*dir, file, text)
+    fd = open(dir, file, 2)
+    write(fd, text + "\n")
+    "written %p to %p" % [file, text]
+  end
+
+  def du(*dir)
+    listing = listdir(dir)
+    size    = listing.files.map { |f| stat(dir, f).size }.inject(:+).to_i
+    listing.directories.map { |d| du(*dir, d) unless d =~ /^\.\.?$/ }.inject(:+).to_i + size
+  end
+end
+
+TWP::CLI.run TWP::TFS::Client do |command|
+  extend TFSTools
+  cmd, *args = command.split(/[ \/]/)
+  if TFSTools.method_defined? cmd
+    public_send(cmd, *args)
+  else
+    "unkown command #{cmd}"
+  end
+end

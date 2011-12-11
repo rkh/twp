@@ -22,12 +22,16 @@ module TWP
       end
 
       def inherited(klass)
-        klass.timeout ||= klass.superclass.timeout
+        klass.timeout  ||= klass.superclass.timeout
+        klass.protocol ||= klass.superclass.protocol
+        klass.messages ||= klass.superclass.messages
+        klass.message_handlers.merge! klass.superclass.message_handlers
         super
       end
 
-      def on_message(type, &block)
-        message_handlers[type.to_sym] = block
+      def on_message(*types, &block)
+        types = messages.keys if types.empty? and messages
+        types.each { |type| message_handlers[type.to_sym] = block }
       end
 
       def message_handlers
@@ -37,8 +41,8 @@ module TWP
 
     attr_accessor :host, :port, :connection, :last_message
 
-    def initialize(host, port)
-      @host, @port = host, port
+    def initialize(host, port, log = $stderr)
+      @host, @port, @log = host, port, log
       connect
     end
 
@@ -55,22 +59,28 @@ module TWP
       when String     then object.encoding == Encoding::BINARY ? encode_binary(object) : encode_string(object)
       when Message    then encode_message(object)
       when Exception  then encode_exception(object)
+      when Struct     then encode_struct(object)
+      when Array      then encode_sequence(object)
       else raise NotImplementedError, 'cannot encode %p' % object
       end
     end
 
     def encode_int(int, tag = 13)
-      return [tag, int].pack("cc") if int.between? -128, 127
-      [byte + 1, int].pack("cl>")
+      return tag.chr + [int].pack("c") if int.between? -128, 127
+      [tag + 1, int].pack("Cl>")
     end
 
     def encode_string(str)
       str = str.encode 'utf-8'
       if str.bytesize < 110
-        [str.bytesize + 17, str].pack('cA*')
+        [str.bytesize + 17, str].pack('CA*')
       else
-        [127, str.bytesize, str].pack('cl>A*')
+        [127, str.bytesize, str].pack('CL>A*')
       end
+    end
+
+    def encode_binary(data)
+      [16, data.bytesize, data].pack('CL>A*')
     end
 
     def encode_message(msg)
@@ -81,7 +91,15 @@ module TWP
     end
 
     def encode_exception(error)
-      [12, 8].pack('cl>') + encode(last_message.id) + encode(error.message)
+      [12, 8].pack('Cl>') + encode(last_message.id) + encode("%s [%s]" % [error.message, error.backtrace[0..3].join("\n")])
+    end
+
+    def encode_struct(struct)
+      encode_sequence(struct, 2)
+    end
+
+    def encode_sequence(array, tag = 3)
+      tag.chr + array.map { |e| encode(e) }.join + "\0"
     end
 
     def message(name, *args)
@@ -96,6 +114,10 @@ module TWP
       io << encode(data)
     end
 
+    def scope
+      self
+    end
+
     def connect
       raise NotImplementedError, "subclass responsibilty"
     end
@@ -105,7 +127,7 @@ module TWP
     end
 
     def log(*strings)
-      $stderr.puts(*strings)
+      @log.puts(*strings) if @log
     end
 
     def debug(*strings)

@@ -40,6 +40,14 @@ module TWP
       connection.send_data connection.message(type, *fields), io
     end
 
+    def send_data(data)
+      connection.send_data(data, io)
+    end
+
+    def close
+      io.close unless io.closed?
+    end
+
     def sessions
       connection.sessions
     end
@@ -49,6 +57,15 @@ module TWP
         message = "#{io.addr.last}: #{message}" unless message.nil? or message.empty?
         super message
       end
+    end
+
+    def respond_to_missing?(name, *)
+      connection.respond_to? name
+    end
+
+    def method_missing(name, *args)
+      return super unless connection.respond_to? name
+      connection.public_send(name, *args)
     end
 
     private

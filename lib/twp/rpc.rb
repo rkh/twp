@@ -39,7 +39,10 @@ module TWP
       def send_rpc(operation, *args)
         response_expected = response_expected? operation.to_sym
         send_message :Request, request_id, response_expected ? 1 : 0, operation.to_s, structify(*args)
-        read_message.result if response_expected
+        return unless response_expected
+        result = read_message.result
+        raise RPCException, result.text if result.is_a? Message and result.name == :RPCException
+        result
       end
 
       def request_id

@@ -6,6 +6,10 @@ module TFSTools
     listdir(dir).to_a.flatten.sort.join(" ")
   end
 
+  def size(*dir, file)
+    stat(dir, file).size
+  end
+
   def fam(host, port, *dir)
     server = TWP::FAM::Server.new(host, port)
     puts "starting FAM server on #{host}:#{port}"

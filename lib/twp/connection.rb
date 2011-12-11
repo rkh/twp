@@ -35,7 +35,7 @@ module TWP
       end
     end
 
-    attr_accessor :host, :port, :connection
+    attr_accessor :host, :port, :connection, :last_message
 
     def initialize(host, port)
       @host, @port = host, port
@@ -50,16 +50,12 @@ module TWP
 
     def encode(object)
       case object
-      when NilClass
-        "\1"
-      when Integer
-        encode_int(object)
-      when String
-        object.encoding == Encoding::BINARY ? encode_binary(object) : encode_string(object)
-      when Message
-        encode_message(object)
-      else
-        raise NotImplementedError, 'cannot encode %p' % object
+      when NilClass   then "\1"
+      when Integer    then encode_int(object)
+      when String     then object.encoding == Encoding::BINARY ? encode_binary(object) : encode_string(object)
+      when Message    then encode_message(object)
+      when Exception  then encode_exception(object)
+      else raise NotImplementedError, 'cannot encode %p' % object
       end
     end
 
@@ -82,6 +78,10 @@ module TWP
       marshal.force_encoding('binary')
       msg.field_values.each { |f| marshal << encode(f) }
       marshal << "\0"
+    end
+
+    def encode_exception(error)
+      [12, 8].pack('cl>') + encode(last_message.id) + encode(error.message)
     end
 
     def message(name, *args)

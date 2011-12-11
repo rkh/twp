@@ -66,12 +66,19 @@ module TWP
 
     def read_method(tag)
       type = tag == 12 ? read_long : tag - 4
+      raise read_error if type == 8
       message = Message.new(connection, type)
+      connection.last_message = message
       while tag = read_short
         break if tag == 0
         message << read_data!(tag)
       end
       message
+    end
+
+    def read_error
+      read_data!
+      PeerError.new("%s (%p)" % [read_data!, connection.last_message])
     end
 
     def read_bytes!(count)

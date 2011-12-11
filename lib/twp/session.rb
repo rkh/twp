@@ -28,7 +28,11 @@ module TWP
     rescue PeerError, EOFError => error
       log "dropping connection: #{error.message}"
       sessions.delete self
-      io.close rescue nil
+      begin
+        io << connection.encode(error)
+        io.close
+      rescue
+      end
       true
     end
 

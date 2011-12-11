@@ -89,7 +89,7 @@ module TWP
     def read_bytes!(count)
       if blocking?
         result = io.read(count)
-        raise PeerError, "stream closed" unless result
+        raise StreamClosedError, "stream closed" unless result
       else
         result = io.read_nonblock(count)
       end

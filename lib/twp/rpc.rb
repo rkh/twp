@@ -51,6 +51,10 @@ module TWP
         result = read_message.result
         raise RPCException, result.text if result.is_a? Message and result.name == :RPCException
         result
+      rescue StreamClosedError
+        connect
+        debug "connection lost while reading, reconnecting"
+        retry
       end
 
       def request_id

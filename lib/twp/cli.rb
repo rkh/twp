@@ -85,6 +85,7 @@ module TWP
         opts.on('-r', '--require LIBRARY', 'requires LIBRARY') { |l| require l }
         opts.on('-I', '--include PATH', 'adds PATH to load path') { |p| $LOAD_PATH.unshift p }
         opts.on('-d', '--[no-]-debug', "run in debug mode") { |d| ENV['DEBUG'] = d ? '1' : '0' }
+        opts.on('-s', '--[no-]show-stream', "display raw data (colorized)") { |s| ENV['SHOW_STREAM'] = s ? '1' : '0' }
 
         opts.separator ""
         opts.separator "Connection options:"

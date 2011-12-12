@@ -49,4 +49,5 @@ some_remote_object = TWP::RPC::Client.get(host, port)
 some_remote_object.foo # => "bar"
 ```
 
-How does that differ from DRb? Well, it also works with servers/clients *not* written in Ruby.
+How does that differ from DRb? Well, it also works with servers/clients not written in Ruby. For instance,
+[written in Scala](https://github.com/machisuji/twp4scala).

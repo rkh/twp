@@ -46,10 +46,15 @@ module TWP
       def send_rpc(operation, *args)
         response_expected = response_expected?(operation.to_sym)
         struct = args.size == 1 ? args.first : CheapStruct.new(args)
-        send_message :Request, request_id, response_expected ? 1 : 0, operation.to_s, struct
+        reqid  = request_id
+        send_message :Request, reqid, response_expected ? 1 : 0, operation.to_s, struct
         return unless response_expected
-        result = read_message.result
-        raise RPCException, result.text if result.is_a? Message and result.name == :RPCException
+        resid  = -1
+        until resid == reqid
+          message       = read_message
+          result, resid = message.result, message.request_id
+          raise RPCException, result.text if result.is_a? Message and result.name == :RPCException
+        end
         result
       rescue StreamClosedError
         connect

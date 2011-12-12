@@ -23,7 +23,7 @@ module TWP::TDL
         if Array === value
           children = value if not value.empty? and value.all? { |e| Node === e }
         else
-          first_line += " #{var.to_s[1..-1]}: #{value.inspect}"
+          first_line += " #{var.to_s[1..-1]}: #{value.inspect}".gsub(/\n|\r/, '')
         end
       end
       renderer << first_line

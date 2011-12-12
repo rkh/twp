@@ -6,7 +6,7 @@ describe TWP::Echo do
     server.start(false)
     sleep 0.2
 
-    client = TWP::Echo::Client.new '127.0.0.1', 7654, nil
+    client = TWP::Echo::Client.new('127.0.0.1', 7654, nil)
     client.send_message :Request, "h e l l o"
 
     message = client.read_message

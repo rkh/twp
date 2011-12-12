@@ -1,6 +1,3 @@
 #!/usr/bin/env ruby
 require_relative 'twp_setup'
-ast = TWP::TDL.load_file(ARGV.first)
-
-ast.render
-ast.run
+TWP::TDL.load_file(ARGV.first).render

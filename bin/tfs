@@ -31,6 +31,14 @@ module TFSTools
     end
   end
 
+  def cat(*dir, file)
+    size = stat(dir, file).size
+    fd   = open(dir, file, 0)
+    read(fd, size)
+  ensure
+    close(fd) if fd
+  end
+
   def append(*dir, file, text)
     fd = open(dir, file, 2)
     write(fd, (text + "\n").encode('binary'))

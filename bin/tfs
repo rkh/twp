@@ -13,7 +13,7 @@ module TFSTools
   def fam(host, port, *dir)
     server = ::TWP::FAM::Server.new(host, port)
     $stderr.puts "starting FAM server on #{host}:#{port}"
-    handle = monitor(dir, 1, host, port)
+    handle = monitor(dir, 1, host.split('.').map(&:to_i).pack('C*').force_encoding('binary'), port)
     connection.disconnect
     server.start
     "done"

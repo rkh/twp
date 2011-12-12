@@ -90,6 +90,7 @@ module TWP
 
       def monitor(directory, recursive, host, port)
         recursive = recursive == 1
+        host      = host.bytes.map(&:ord).join('.')
         signature = [directory, recursive, host, port]
         monitors << signature unless monitors.include? signature
         monitors.index(signature)

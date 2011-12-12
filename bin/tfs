@@ -33,7 +33,8 @@ module TFSTools
 
   def append(*dir, file, text)
     fd = open(dir, file, 2)
-    write(fd, text + "\n")
+    write(fd, (text + "\n").encode('binary'))
+    close(fd)
     "written %p to %p" % [file, text]
   end
 

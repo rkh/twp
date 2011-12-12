@@ -123,12 +123,14 @@ module TWP
     end
 
     class Client < TWP::RPC::Client
+      NO_RESPONSE = [:write, :seek, :close, :mkdir, :rmdir, :remove, :stop_monitoring]
+
       def self.get(*args)
         Remote.new(new(*args))
       end
 
       def response_expected?(operation)
-        operation != :close
+        not NO_RESPONSE.include? operation
       end
 
       def scope

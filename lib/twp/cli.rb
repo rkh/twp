@@ -90,7 +90,7 @@ module TWP
         opts.separator ""
         opts.separator "Connection options:"
         opts.on('-b', '--host HOST', "host to connect to (default: #{default_host(klass)})") { |h| @host = h }
-        opts.on('-p', '--port PORT', "port to connect to (default: #{default_port(klass)})") { |p| @port = Integer(port) }
+        opts.on('-p', '--port PORT', "port to connect to (default: #{default_port(klass)})") { |p| @port = Integer(p) }
         opts.on('-t', '--timeout SEC', "set timeout for inactive connections") { |t| klass.timeout = Integer(t) }
 
         if klass.client?
